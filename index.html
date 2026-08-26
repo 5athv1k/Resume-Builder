@@ -82,12 +82,19 @@
     </nav>
 
     <div class="sidebar-ats-score">
-      <div class="ats-score-header">
+      <div class="ats-score-header" style="margin-bottom: 8px;">
         <span class="ats-score-label">ATS Score</span>
-        <span class="ats-score-value" id="ats-score-value">0/100</span>
+        <button class="btn-ai-action" id="btn-scan-ats" style="margin: 0; padding: 4px 8px; font-size: 11px;">Run Scan</button>
       </div>
-      <div class="progress-bar">
-        <div class="progress-fill ats-score-fill" id="ats-score-fill" style="width: 0%; background: var(--danger);"></div>
+      <div id="ats-score-results" style="display: none;">
+        <div class="ats-score-header" style="margin-bottom: 6px;">
+          <span class="ats-score-value" id="ats-score-value" style="font-size: 14px;">0/100</span>
+          <span class="ats-score-status" id="ats-score-status" style="font-size:12px; font-weight:700;">Poor</span>
+        </div>
+        <div class="progress-bar" style="height: 6px; margin-bottom: 12px;">
+          <div class="progress-fill ats-score-fill" id="ats-score-fill" style="width: 0%; background: var(--danger);"></div>
+        </div>
+        <div id="ats-tips" style="font-size: 11px; color: var(--text-secondary); line-height: 1.5; padding: 8px; background: var(--sidebar-surface); border-radius: 6px; border: 1px solid var(--border);"></div>
       </div>
     </div>
     <div class="nav-divider"></div>

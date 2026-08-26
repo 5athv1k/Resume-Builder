@@ -546,63 +546,9 @@
   }
 
   
-  function calculateATSScore() {
-    let score = 0;
-    
-    // 1. Personal Info (Max 20)
-    if (state.personal.fullName) score += 5;
-    if (state.personal.email) score += 5;
-    if (state.personal.phone) score += 5;
-    if (state.personal.linkedin || state.personal.website || state.personal.github) score += 5;
-    
-    // 2. Summary (Max 20)
-    if (state.summary && state.summary.length > 10) {
-      score += 10;
-      if (state.summary.length > 100) score += 10;
-    }
-    
-    // 3. Experience (Max 30)
-    if (state.experience.length > 0 && state.experience.some(e => e.company || e.title)) {
-      score += 10;
-      if (state.experience.length > 1) score += 5;
-      
-      let hasGoodDesc = false;
-      state.experience.forEach(e => {
-        if (e.description && e.description.length > 50) hasGoodDesc = true;
-      });
-      if (hasGoodDesc) score += 15;
-    }
-    
-    // 4. Education (Max 15)
-    if (state.education.length > 0 && state.education.some(e => e.school || e.degree)) {
-      score += 15;
-    }
-    
-    // 5. Skills (Max 15)
-    if (state.skills.length >= 3) score += 5;
-    if (state.skills.length >= 6) score += 10;
-    
-    // Cap at 100
-    score = Math.min(100, Math.max(0, score));
-    
-    // Update UI
-    const scoreValue = document.getElementById('ats-score-value');
-    const scoreFill = document.getElementById('ats-score-fill');
-    
-    if (scoreValue && scoreFill) {
-      scoreValue.textContent = score + '/100';
-      scoreFill.style.width = score + '%';
-      
-      let color = 'var(--danger)';
-      if (score >= 40) color = '#f97316'; // orange
-      if (score >= 70) color = 'var(--success)'; // green
-      
-      scoreFill.style.background = color;
-    }
-  }
+  
 
   function renderPreview() {
-    calculateATSScore();
     if (!hasAnyData()) {
       resumeEmptyState.style.display = 'flex';
       resumeContent.style.display = 'none';
@@ -1152,6 +1098,110 @@
   /* ═══════════════════════════════════════════════════════════
      INITIALIZE
      ═══════════════════════════════════════════════════════════ */
+
+  /* ═══════════════════════════════════════════════════════════
+     ATS SCANNER
+     ═══════════════════════════════════════════════════════════ */
+  const btnScanAts = document.getElementById('btn-scan-ats');
+  const atsResults = document.getElementById('ats-score-results');
+  const atsScoreValue = document.getElementById('ats-score-value');
+  const atsScoreFill = document.getElementById('ats-score-fill');
+  const atsScoreStatus = document.getElementById('ats-score-status');
+  const atsTips = document.getElementById('ats-tips');
+
+  if (btnScanAts) {
+    btnScanAts.addEventListener('click', () => {
+      btnScanAts.disabled = true;
+      btnScanAts.innerHTML = '<span class="ai-spinner" style="width:10px;height:10px;border-width:2px;margin-right:4px;vertical-align:middle;"></span> Scanning...';
+      atsResults.style.display = 'none';
+      atsScoreFill.style.width = '0%';
+      
+      setTimeout(() => {
+        runAtsScan();
+      }, 1500);
+    });
+  }
+
+  function runAtsScan() {
+    let score = 0;
+    let tips = [];
+    
+    // 1. Personal
+    let pScore = 0;
+    if (state.personal.fullName) pScore += 5;
+    if (state.personal.email) pScore += 5;
+    if (state.personal.phone) pScore += 5;
+    if (state.personal.linkedin || state.personal.website || state.personal.github) pScore += 5;
+    score += pScore;
+    if (pScore < 20) tips.push("• Complete contact info (email, phone, link)");
+
+    // 2. Summary
+    let sScore = 0;
+    if (state.summary && state.summary.length > 10) {
+      sScore += 10;
+      if (state.summary.length > 100) sScore += 10;
+    }
+    score += sScore;
+    if (sScore === 0) tips.push("• Add a professional summary");
+    else if (sScore === 10) tips.push("• Lengthen summary for better impact");
+
+    // 3. Experience
+    let eScore = 0;
+    if (state.experience.length > 0 && state.experience.some(e => e.company || e.title)) {
+      eScore += 10;
+      if (state.experience.length > 1) eScore += 5;
+      
+      let hasGoodDesc = false;
+      state.experience.forEach(e => {
+        if (e.description && e.description.length > 50) hasGoodDesc = true;
+      });
+      if (hasGoodDesc) eScore += 15;
+    }
+    score += eScore;
+    if (eScore < 30) tips.push("• Add detailed experience descriptions with metrics");
+
+    // 4. Education
+    if (state.education.length > 0 && state.education.some(e => e.school || e.degree)) {
+      score += 15;
+    } else {
+      tips.push("• Add education details");
+    }
+    
+    // 5. Skills
+    let skScore = 0;
+    if (state.skills.length >= 3) skScore += 5;
+    if (state.skills.length >= 6) skScore += 10;
+    score += skScore;
+    if (skScore < 15) tips.push("• Add at least 6 relevant skills");
+
+    score = Math.min(100, Math.max(0, score));
+    
+    btnScanAts.disabled = false;
+    btnScanAts.innerHTML = 'Scan Again';
+    
+    atsResults.style.display = 'block';
+    atsScoreValue.textContent = score + '/100';
+    
+    setTimeout(() => {
+      atsScoreFill.style.width = score + '%';
+    }, 50);
+    
+    let color = 'var(--danger)';
+    let status = 'Poor';
+    if (score >= 50) { color = '#f55036'; status = 'Average'; }
+    if (score >= 80) { color = 'var(--success)'; status = 'Excellent'; }
+    
+    atsScoreFill.style.background = color;
+    atsScoreStatus.textContent = status;
+    atsScoreStatus.style.color = color;
+    
+    if (score === 100) {
+      atsTips.innerHTML = '<span style="color:var(--success);">✓ Your resume is fully optimized for ATS parsing!</span>';
+    } else {
+      atsTips.innerHTML = '<strong style="color:var(--text);display:block;margin-bottom:4px;">To improve:</strong>' + tips.join('<br>');
+    }
+  }
+
   function init() {
     // Try loading from localStorage
     const loaded = loadFromLocalStorage();
