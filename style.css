@@ -1298,7 +1298,7 @@ body {
 
 .tpl-preview-modern .tpl-thumb-sidebar {
   width: 30%;
-  background: var(--accent);
+  background: #222222;
 }
 
 .tpl-preview-modern .tpl-thumb-content {
@@ -1378,7 +1378,7 @@ body {
 
 .tpl-preview-creative .tpl-thumb-banner {
   height: 25%;
-  background: var(--accent);
+  background: #222222;
 }
 
 .tpl-preview-creative .tpl-thumb-content {
@@ -1397,9 +1397,9 @@ body {
 .tpl-preview-creative .tpl-thumb-content div:first-child {
   height: 3px;
   width: 4px;
-  background: var(--accent);
+  background: #222222;
   border-radius: 0;
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid #222222;
   padding-right: 80%;
 }
 
