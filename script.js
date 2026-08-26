@@ -1126,53 +1126,84 @@
     let score = 0;
     let tips = [];
     
-    // 1. Personal
+    // 1. Personal (15 points)
     let pScore = 0;
-    if (state.personal.fullName) pScore += 5;
-    if (state.personal.email) pScore += 5;
-    if (state.personal.phone) pScore += 5;
-    if (state.personal.linkedin || state.personal.website || state.personal.github) pScore += 5;
+    if (state.personal.email) pScore += 4;
+    if (state.personal.phone) pScore += 4;
+    if (state.personal.location) pScore += 3;
+    if (state.personal.linkedin || state.personal.github || state.personal.website) pScore += 4;
     score += pScore;
-    if (pScore < 20) tips.push("• Complete contact info (email, phone, link)");
+    if (pScore < 15) tips.push("• Include complete contact info (Email, Phone, Location, Link)");
 
-    // 2. Summary
+    // 2. Summary (15 points)
     let sScore = 0;
-    if (state.summary && state.summary.length > 10) {
-      sScore += 10;
-      if (state.summary.length > 100) sScore += 10;
+    if (state.summary) {
+      const len = state.summary.length;
+      if (len >= 150 && len <= 500) {
+        sScore = 15;
+      } else if (len > 0) {
+        sScore = 8;
+        tips.push("• Summary should be between 150-500 characters (currently " + len + ")");
+      }
+    } else {
+      tips.push("• Add a professional summary");
     }
     score += sScore;
-    if (sScore === 0) tips.push("• Add a professional summary");
-    else if (sScore === 10) tips.push("• Lengthen summary for better impact");
 
-    // 3. Experience
-    let eScore = 0;
-    if (state.experience.length > 0 && state.experience.some(e => e.company || e.title)) {
-      eScore += 10;
-      if (state.experience.length > 1) eScore += 5;
+    // 3. Action Verbs & Metrics (45 points)
+    let metricsCount = 0;
+    let actionVerbsFound = 0;
+    const actionVerbs = ['led', 'managed', 'developed', 'built', 'created', 'designed', 'architected', 'optimized', 'increased', 'reduced', 'improved', 'implemented', 'achieved', 'analyzed', 'automated'];
+    
+    if (state.experience && state.experience.length > 0 && state.experience.some(e => e.company || e.title)) {
+      let eScore = 10; // base for having experience
       
-      let hasGoodDesc = false;
       state.experience.forEach(e => {
-        if (e.description && e.description.length > 50) hasGoodDesc = true;
+        if (e.description) {
+          const desc = e.description.toLowerCase();
+          const numbers = desc.match(/\d+|%|\$/g);
+          if (numbers) metricsCount += numbers.length;
+          
+          actionVerbs.forEach(verb => {
+            // check for word boundaries to avoid false positives
+            const regex = new RegExp('\\b' + verb + '\\b', 'g');
+            if (desc.match(regex)) actionVerbsFound++;
+          });
+        }
       });
-      if (hasGoodDesc) eScore += 15;
+      
+      let metricScore = Math.min(20, metricsCount * 4); // max 20 pts for metrics
+      let verbScore = Math.min(15, actionVerbsFound * 3); // max 15 pts for verbs
+      
+      score += (eScore + metricScore + verbScore);
+      
+      if (metricScore < 20) tips.push("• Add more quantifiable metrics (numbers, %, $) to experience descriptions");
+      if (verbScore < 15) tips.push("• Start experience bullet points with strong action verbs (e.g., Developed, Managed)");
+      
+    } else {
+      tips.push("• Add professional experience");
     }
-    score += eScore;
-    if (eScore < 30) tips.push("• Add detailed experience descriptions with metrics");
 
-    // 4. Education
-    if (state.education.length > 0 && state.education.some(e => e.school || e.degree)) {
-      score += 15;
+    // 4. Skills (15 points)
+    let skScore = 0;
+    const skillCount = state.skills ? state.skills.length : 0;
+    if (skillCount >= 8 && skillCount <= 20) {
+      skScore = 15;
+    } else if (skillCount > 0) {
+      skScore = 7;
+      if (skillCount < 8) tips.push("• Add more skills (aim for 8-20 relevant keywords)");
+      if (skillCount > 20) tips.push("• Too many skills detected (avoid keyword stuffing)");
+    } else {
+      tips.push("• Add a skills section");
+    }
+    score += skScore;
+
+    // 5. Education (10 points)
+    if (state.education && state.education.length > 0 && state.education.some(e => e.school || e.degree)) {
+      score += 10;
     } else {
       tips.push("• Add education details");
     }
-    
-    // 5. Skills
-    let skScore = 0;
-    if (state.skills.length >= 3) skScore += 5;
-    if (state.skills.length >= 6) skScore += 10;
-    score += skScore;
-    if (skScore < 15) tips.push("• Add at least 6 relevant skills");
 
     score = Math.min(100, Math.max(0, score));
     
