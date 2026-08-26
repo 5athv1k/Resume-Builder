@@ -545,7 +545,64 @@
     );
   }
 
+  
+  function calculateATSScore() {
+    let score = 0;
+    
+    // 1. Personal Info (Max 20)
+    if (state.personal.fullName) score += 5;
+    if (state.personal.email) score += 5;
+    if (state.personal.phone) score += 5;
+    if (state.personal.linkedin || state.personal.website || state.personal.github) score += 5;
+    
+    // 2. Summary (Max 20)
+    if (state.summary && state.summary.length > 10) {
+      score += 10;
+      if (state.summary.length > 100) score += 10;
+    }
+    
+    // 3. Experience (Max 30)
+    if (state.experience.length > 0 && state.experience.some(e => e.company || e.title)) {
+      score += 10;
+      if (state.experience.length > 1) score += 5;
+      
+      let hasGoodDesc = false;
+      state.experience.forEach(e => {
+        if (e.description && e.description.length > 50) hasGoodDesc = true;
+      });
+      if (hasGoodDesc) score += 15;
+    }
+    
+    // 4. Education (Max 15)
+    if (state.education.length > 0 && state.education.some(e => e.school || e.degree)) {
+      score += 15;
+    }
+    
+    // 5. Skills (Max 15)
+    if (state.skills.length >= 3) score += 5;
+    if (state.skills.length >= 6) score += 10;
+    
+    // Cap at 100
+    score = Math.min(100, Math.max(0, score));
+    
+    // Update UI
+    const scoreValue = document.getElementById('ats-score-value');
+    const scoreFill = document.getElementById('ats-score-fill');
+    
+    if (scoreValue && scoreFill) {
+      scoreValue.textContent = score + '/100';
+      scoreFill.style.width = score + '%';
+      
+      let color = 'var(--danger)';
+      if (score >= 40) color = '#f97316'; // orange
+      if (score >= 70) color = 'var(--success)'; // green
+      
+      scoreFill.style.background = color;
+    }
+  }
+
   function renderPreview() {
+    calculateATSScore();
     if (!hasAnyData()) {
       resumeEmptyState.style.display = 'flex';
       resumeContent.style.display = 'none';

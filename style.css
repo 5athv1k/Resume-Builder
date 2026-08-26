@@ -2007,3 +2007,30 @@ select:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px var(--sidebar-accent-glow);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ATS SCORE
+   ═══════════════════════════════════════════════════════════════ */
+.sidebar-ats-score {
+  padding: 12px 20px 4px;
+}
+.ats-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.ats-score-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sidebar-text-bright);
+}
+.ats-score-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sidebar-text);
+}
+.ats-score-fill {
+  transition: width 0.4s ease, background 0.4s ease;
+}
