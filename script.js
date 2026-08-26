@@ -879,7 +879,7 @@
   }
 
   // Load saved API key
-  if (window.AI_SUGGESTIONS && window.AI_SUGGESTIONS.hasApiKey()) {
+  if (apiKeyInput && window.AI_SUGGESTIONS && window.AI_SUGGESTIONS.hasApiKey()) {
     apiKeyInput.value = window.AI_SUGGESTIONS.getApiKey();
   }
 
