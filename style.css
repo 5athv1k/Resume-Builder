@@ -12,31 +12,31 @@
 }
 
 :root {
-  /* Sidebar / Orange palette */
-  --sidebar-bg: #f97316;
-  --sidebar-surface: #ea580c;
-  --sidebar-hover: #ea580c;
-  --sidebar-active: #c2410c;
-  --sidebar-text: #ffedd5;
+  /* Sidebar / Groq palette */
+  --sidebar-bg: #000000;
+  --sidebar-surface: #111111;
+  --sidebar-hover: #1a1a1a;
+  --sidebar-active: #222222;
+  --sidebar-text: #a3a3a3;
   --sidebar-text-bright: #ffffff;
-  --sidebar-accent: #ffffff;
-  --sidebar-accent-glow: rgba(255, 255, 255, 0.3);
+  --sidebar-accent: #f55036;
+  --sidebar-accent-glow: rgba(245, 80, 54, 0.25);
   --sidebar-width: 260px;
 
-  /* Main palette */
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --surface-hover: #fff7ed;
-  --border: #e2e8f0;
-  --border-focus: #f97316;
-  --text: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --accent: #f97316;
-  --accent-light: #ffedd5;
-  --accent-dark: #ea580c;
+  /* Main palette (Groq Dark Mode) */
+  --bg: #050505;
+  --surface: #111111;
+  --surface-hover: #1a1a1a;
+  --border: #262626;
+  --border-focus: #f55036;
+  --text: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-muted: #525252;
+  --accent: #f55036;
+  --accent-light: rgba(245, 80, 54, 0.15);
+  --accent-dark: #d43b22;
   --danger: #ef4444;
-  --danger-light: #fef2f2;
+  --danger-light: rgba(239, 68, 68, 0.1);
   --success: #10b981;
 
   /* Typography */
@@ -666,7 +666,7 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 .preview-panel {
   flex: 1;
-  background: #e8ecf3;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -1168,12 +1168,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c7c7cc;
+  background: #404040;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8ad;
+  background: #525252;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
@@ -1728,14 +1728,14 @@ body {
 }
 
 .ai-diff-old {
-  background: #fef2f2;
+  background: rgba(239, 68, 68, 0.1);
   border-left: 3px solid var(--danger);
   text-decoration: line-through;
   opacity: 0.7;
 }
 
 .ai-diff-new {
-  background: #f0fdf4;
+  background: rgba(16, 185, 129, 0.1);
   border-left: 3px solid var(--success);
 }
 
@@ -1776,7 +1776,7 @@ body {
 }
 
 .ai-skill-suggestion.added {
-  background: #f0fdf4;
+  background: rgba(16, 185, 129, 0.1);
   border-color: var(--success);
   color: var(--success);
   cursor: default;

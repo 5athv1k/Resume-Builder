@@ -10,7 +10,7 @@
 
   const defaultSettings = {
     template: 'modern',
-    accentColor: '#f97316',
+    accentColor: '#f55036',
     fontFamily: 'inter',
     density: 'normal',
     atsMode: false,
