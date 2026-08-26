@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Resume Made Easy — Professional Resume Builder</title>
-  <meta name="description" content="Build a stunning, professional resume in minutes. Real-time preview, PDF export, and a clean modern design." />
+  <meta name="description" content="Build a stunning, professional resume in minutes. Multiple templates, real-time preview, AI suggestions, and PDF export." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&family=Georgia&family=Roboto+Slab:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="templates/template-styles.css" />
 </head>
 <body>
 
@@ -28,34 +29,68 @@
       <p class="brand-tagline">Craft your future</p>
     </div>
 
+    <!-- Progress Indicator -->
+    <div class="sidebar-progress" id="sidebar-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <span class="progress-text" id="progress-text">0 of 6 sections complete</span>
+    </div>
+
     <nav class="sidebar-nav" id="sidebar-nav">
       <button class="nav-item active" data-section="personal" id="nav-personal">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Personal Info</span>
+        <span class="nav-check" id="check-personal"></span>
       </button>
       <button class="nav-item" data-section="summary" id="nav-summary">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
         <span>Summary</span>
+        <span class="nav-check" id="check-summary"></span>
       </button>
       <button class="nav-item" data-section="experience" id="nav-experience">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         <span>Experience</span>
+        <span class="nav-check" id="check-experience"></span>
       </button>
       <button class="nav-item" data-section="education" id="nav-education">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 4 3 6 3s6-1 6-3v-5"/></svg>
         <span>Education</span>
+        <span class="nav-check" id="check-education"></span>
       </button>
       <button class="nav-item" data-section="skills" id="nav-skills">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span>Skills</span>
+        <span class="nav-check" id="check-skills"></span>
       </button>
       <button class="nav-item" data-section="projects" id="nav-projects">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         <span>Projects</span>
+        <span class="nav-check" id="check-projects"></span>
+      </button>
+
+      <div class="nav-divider"></div>
+
+      <button class="nav-item" data-section="templates" id="nav-templates">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Templates</span>
+      </button>
+      <button class="nav-item" data-section="examples" id="nav-examples">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Examples</span>
       </button>
     </nav>
 
     <div class="sidebar-actions">
+      <!-- ATS Mode Toggle -->
+      <div class="ats-toggle-wrapper">
+        <label class="ats-toggle" for="ats-toggle">
+          <input type="checkbox" id="ats-toggle" />
+          <span class="ats-toggle-slider"></span>
+          <span class="ats-toggle-label">ATS Mode</span>
+        </label>
+      </div>
+
       <button class="btn-download" id="btn-download-pdf" title="Download as PDF">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span>Download PDF</span>
@@ -81,9 +116,10 @@
       <span></span><span></span><span></span>
     </button>
     <h1 class="mobile-brand">Resume Made Easy</h1>
-    <button class="btn-toggle-preview" id="btn-toggle-preview" aria-label="Toggle preview">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-    </button>
+    <div class="mobile-tabs" id="mobile-tabs">
+      <button class="mobile-tab active" data-tab="edit">Edit</button>
+      <button class="mobile-tab" data-tab="preview">Preview</button>
+    </div>
   </header>
 
   <!-- ════════════════════════ MAIN CONTENT ════════════════════════ -->
@@ -137,7 +173,25 @@
         <div class="form-group full-width">
           <label for="summaryText">Professional Summary</label>
           <textarea id="summaryText" rows="6" placeholder="Write 2-4 sentences about your professional background, key strengths, and career goals..."></textarea>
-          <span class="char-count" id="summaryCharCount">0 / 500</span>
+          <div class="summary-actions">
+            <span class="char-count" id="summaryCharCount">0 / 500</span>
+            <button class="btn-ai-action" id="btn-polish-summary" type="button" title="Use AI to polish your summary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg>
+              Polish with AI
+            </button>
+          </div>
+        </div>
+        <!-- AI Suggestion Panel for Summary -->
+        <div class="ai-suggestion-panel" id="ai-summary-panel" style="display:none;">
+          <div class="ai-suggestion-header">
+            <span>AI Suggestion</span>
+            <button class="ai-suggestion-close" id="ai-summary-close">&times;</button>
+          </div>
+          <div class="ai-suggestion-content" id="ai-summary-content"></div>
+          <div class="ai-suggestion-actions">
+            <button class="btn-ai-accept" id="ai-summary-accept">Accept</button>
+            <button class="btn-ai-discard" id="ai-summary-discard">Discard</button>
+          </div>
         </div>
       </section>
 
@@ -170,6 +224,18 @@
             </div>
           </div>
           <div class="skills-tags" id="skills-tags"></div>
+          <button class="btn-ai-action btn-ai-skills" id="btn-suggest-skills" type="button" title="Get AI skill suggestions">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg>
+            Suggest Skills with AI
+          </button>
+        </div>
+        <!-- AI Skill Suggestions Panel -->
+        <div class="ai-suggestion-panel" id="ai-skills-panel" style="display:none;">
+          <div class="ai-suggestion-header">
+            <span>Suggested Skills</span>
+            <button class="ai-suggestion-close" id="ai-skills-close">&times;</button>
+          </div>
+          <div class="ai-suggestion-content ai-skills-list" id="ai-skills-content"></div>
         </div>
       </section>
 
@@ -180,6 +246,104 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Project
         </button>
+      </section>
+
+      <!-- ──────── Templates & Settings Section ──────── -->
+      <section class="form-section" id="section-templates" data-title="Templates & Settings" data-subtitle="Choose your look and customize">
+        <!-- Template Gallery -->
+        <h3 class="section-label">Choose a Template</h3>
+        <div class="template-gallery" id="template-gallery">
+          <button class="template-card active" data-template="modern" id="tpl-modern">
+            <div class="template-preview tpl-preview-modern">
+              <div class="tpl-thumb-sidebar"></div>
+              <div class="tpl-thumb-content"><div></div><div></div><div></div></div>
+            </div>
+            <span class="template-label">Modern</span>
+          </button>
+          <button class="template-card" data-template="classic" id="tpl-classic">
+            <div class="template-preview tpl-preview-classic">
+              <div class="tpl-thumb-header"></div>
+              <div class="tpl-thumb-lines"><div></div><div></div><div></div><div></div></div>
+            </div>
+            <span class="template-label">Classic</span>
+          </button>
+          <button class="template-card" data-template="minimal" id="tpl-minimal">
+            <div class="template-preview tpl-preview-minimal">
+              <div class="tpl-thumb-name"></div>
+              <div class="tpl-thumb-spacer"></div>
+              <div class="tpl-thumb-lines"><div></div><div></div><div></div></div>
+            </div>
+            <span class="template-label">Minimal</span>
+          </button>
+          <button class="template-card" data-template="creative" id="tpl-creative">
+            <div class="template-preview tpl-preview-creative">
+              <div class="tpl-thumb-banner"></div>
+              <div class="tpl-thumb-content"><div></div><div></div><div></div></div>
+            </div>
+            <span class="template-label">Creative</span>
+          </button>
+        </div>
+
+        <!-- Customization Controls -->
+        <h3 class="section-label" style="margin-top:28px;">Customize</h3>
+        <div class="customize-controls">
+          <div class="form-group">
+            <label for="accentColor">Accent Color</label>
+            <div class="color-picker-wrapper">
+              <input type="color" id="accentColor" value="#6c63ff" />
+              <span class="color-value" id="accentColorValue">#6c63ff</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fontFamily">Font Family</label>
+            <select id="fontFamily">
+              <option value="inter">Inter (Modern Sans)</option>
+              <option value="georgia">Georgia (Classic Serif)</option>
+              <option value="roboto">Roboto Slab (Balanced)</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Layout Density</label>
+            <div class="density-options">
+              <label class="density-option">
+                <input type="radio" name="density" value="compact" />
+                <span>Compact</span>
+              </label>
+              <label class="density-option">
+                <input type="radio" name="density" value="normal" checked />
+                <span>Normal</span>
+              </label>
+              <label class="density-option">
+                <input type="radio" name="density" value="spacious" />
+                <span>Spacious</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Settings -->
+        <h3 class="section-label" style="margin-top:28px;">AI Settings</h3>
+        <div class="ai-settings">
+          <div class="form-group full-width">
+            <label for="aiApiKey">Claude API Key</label>
+            <div class="api-key-wrapper">
+              <input type="password" id="aiApiKey" placeholder="sk-ant-api03-..." />
+              <button type="button" class="btn-toggle-key" id="btn-toggle-key" title="Show/hide key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <span class="helper-text">Your API key is stored locally and never sent to any server except Anthropic's API. <a href="https://console.anthropic.com/" target="_blank">Get a key</a></span>
+          </div>
+          <button class="btn-save-key" id="btn-save-key" type="button">Save Key</button>
+        </div>
+      </section>
+
+      <!-- ──────── Examples Section ──────── -->
+      <section class="form-section" id="section-examples" data-title="Resume Examples" data-subtitle="Start from a professional template">
+        <p class="examples-intro">Choose an example resume to see the tool in action. You can then edit or clear and add your own info.</p>
+        <div class="examples-gallery" id="examples-gallery">
+          <!-- Populated by JS from examples.js -->
+        </div>
       </section>
     </div>
 
@@ -199,7 +363,6 @@
       </div>
       <div class="preview-scroll-area" id="preview-scroll-area">
         <div class="resume-page" id="resume-page">
-          <!-- Resume content rendered by JS -->
           <div class="resume-empty-state" id="resume-empty-state">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <p>Start filling in your details<br/>to see a live preview</p>
@@ -218,6 +381,13 @@
 
   <!-- ═══════════ SCRIPTS ═══════════ -->
   <script src="jspdf.umd.min.js"></script>
+  <script src="templates/template-modern.js"></script>
+  <script src="templates/template-classic.js"></script>
+  <script src="templates/template-minimal.js"></script>
+  <script src="templates/template-creative.js"></script>
+  <script src="templates/template-ats.js"></script>
+  <script src="examples.js"></script>
+  <script src="ai-suggestions.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

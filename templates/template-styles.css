@@ -1,0 +1,507 @@
+/* Base variables for density support and consistent spacing */
+.resume-page {
+  --spacing-section: 24px;
+  --spacing-item: 16px;
+  --spacing-xs: 6px;
+  --font-size-base: 14px;
+  --font-size-sm: 12px;
+  --font-size-h1: 28px;
+  --font-size-h2: 20px;
+  --font-size-h3: 16px;
+  --resume-accent: #2c3e50;
+  --resume-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.density-compact .resume-page,
+.density-compact {
+  --spacing-section: 16px;
+  --spacing-item: 10px;
+  --spacing-xs: 4px;
+  --font-size-base: 12px;
+  --font-size-sm: 10px;
+  --font-size-h1: 22px;
+  --font-size-h2: 16px;
+  --font-size-h3: 14px;
+}
+
+.density-spacious .resume-page,
+.density-spacious {
+  --spacing-section: 32px;
+  --spacing-item: 20px;
+  --spacing-xs: 8px;
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-h1: 34px;
+  --font-size-h2: 24px;
+  --font-size-h3: 18px;
+}
+
+/* Base styles for all templates to reset common elements */
+[class^="resume-tpl-"] {
+  font-family: var(--resume-font);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+[class^="resume-tpl-"] *,
+[class^="resume-tpl-"] *::before,
+[class^="resume-tpl-"] *::after {
+  box-sizing: inherit;
+}
+
+[class^="resume-tpl-"] h1,
+[class^="resume-tpl-"] h2,
+[class^="resume-tpl-"] h3,
+[class^="resume-tpl-"] p,
+[class^="resume-tpl-"] ul {
+  margin: 0;
+  padding: 0;
+}
+
+[class^="resume-tpl-"] ul {
+  list-style-position: inside;
+}
+
+/* ==========================================================================
+   1. MODERN TEMPLATE
+   ========================================================================== */
+.resume-tpl-modern {
+  display: flex;
+  min-height: 100%;
+  color: #333;
+  background-color: #fff;
+}
+
+.resume-tpl-modern .modern-sidebar {
+  width: 30%;
+  background-color: var(--resume-accent);
+  color: #fff;
+  padding: var(--spacing-section);
+}
+
+.resume-tpl-modern .modern-main {
+  width: 70%;
+  padding: var(--spacing-section);
+}
+
+.resume-tpl-modern .header-name {
+  font-size: var(--font-size-h1);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.2;
+}
+
+.resume-tpl-modern .header-title {
+  font-size: var(--font-size-h3);
+  opacity: 0.9;
+  margin-bottom: var(--spacing-section);
+}
+
+.resume-tpl-modern .section-title {
+  font-size: var(--font-size-h2);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: var(--spacing-section);
+  margin-bottom: var(--spacing-item);
+  letter-spacing: 1px;
+}
+
+.resume-tpl-modern .modern-main .section-title {
+  color: var(--resume-accent);
+  border-bottom: 2px solid var(--resume-accent);
+  padding-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-modern .modern-sidebar .section-title {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  padding-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-modern .contact-item {
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resume-tpl-modern .job-item,
+.resume-tpl-modern .edu-item {
+  margin-bottom: var(--spacing-item);
+}
+
+.resume-tpl-modern .job-header,
+.resume-tpl-modern .edu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-modern .job-title {
+  font-weight: 700;
+  font-size: var(--font-size-h3);
+}
+
+.resume-tpl-modern .job-company {
+  font-weight: 500;
+  color: var(--resume-accent);
+}
+
+.resume-tpl-modern .job-date {
+  font-size: var(--font-size-sm);
+  color: #666;
+}
+
+.resume-tpl-modern .skills-list {
+  list-style: none;
+}
+
+.resume-tpl-modern .skills-list li {
+  margin-bottom: var(--spacing-xs);
+}
+
+/* ==========================================================================
+   2. CLASSIC TEMPLATE
+   ========================================================================== */
+.resume-tpl-classic {
+  padding: var(--spacing-section);
+  color: #111;
+  background-color: #fff;
+  font-family: var(--resume-font, "Times New Roman", Times, serif);
+}
+
+.resume-tpl-classic .classic-header {
+  text-align: center;
+  margin-bottom: var(--spacing-section);
+}
+
+.resume-tpl-classic .header-name {
+  font-size: var(--font-size-h1);
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-classic .contact-info {
+  font-size: var(--font-size-sm);
+  color: #444;
+}
+
+.resume-tpl-classic .contact-info span:not(:last-child)::after {
+  content: " | ";
+  margin: 0 4px;
+}
+
+.resume-tpl-classic .section-title {
+  font-size: var(--font-size-h2);
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  border-bottom: 1px solid #000;
+  margin-top: var(--spacing-section);
+  margin-bottom: var(--spacing-item);
+  padding-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-classic .job-item,
+.resume-tpl-classic .edu-item {
+  margin-bottom: var(--spacing-item);
+}
+
+.resume-tpl-classic .job-header,
+.resume-tpl-classic .edu-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.resume-tpl-classic .job-title {
+  font-weight: bold;
+}
+
+.resume-tpl-classic .job-company {
+  font-style: italic;
+}
+
+.resume-tpl-classic .job-date {
+  font-weight: bold;
+}
+
+.resume-tpl-classic ul {
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+/* ==========================================================================
+   3. MINIMAL TEMPLATE
+   ========================================================================== */
+.resume-tpl-minimal {
+  padding: var(--spacing-section) 40px;
+  color: #333;
+  background-color: #fff;
+}
+
+.resume-tpl-minimal .minimal-header {
+  margin-bottom: var(--spacing-section);
+}
+
+.resume-tpl-minimal .header-name {
+  font-size: var(--font-size-h1);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.resume-tpl-minimal .header-name strong {
+  font-weight: 600;
+}
+
+.resume-tpl-minimal .contact-info {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: #777;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.resume-tpl-minimal .section-container {
+  display: flex;
+  margin-top: var(--spacing-section);
+  gap: var(--spacing-section);
+}
+
+.resume-tpl-minimal .section-title-col {
+  width: 20%;
+  flex-shrink: 0;
+}
+
+.resume-tpl-minimal .section-content-col {
+  width: 80%;
+}
+
+.resume-tpl-minimal .section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--resume-accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.resume-tpl-minimal .job-item {
+  margin-bottom: var(--spacing-section);
+}
+
+.resume-tpl-minimal .job-header {
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-minimal .job-title {
+  font-weight: 600;
+  font-size: var(--font-size-h3);
+}
+
+.resume-tpl-minimal .job-meta {
+  font-size: var(--font-size-sm);
+  color: #777;
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-minimal ul {
+  padding-left: 16px;
+  color: #555;
+}
+
+.resume-tpl-minimal ul li {
+  margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   4. CREATIVE TEMPLATE
+   ========================================================================== */
+.resume-tpl-creative {
+  color: #333;
+  background-color: #fff;
+}
+
+.resume-tpl-creative .creative-header {
+  background-color: var(--resume-accent);
+  color: #fff;
+  padding: 40px var(--spacing-section);
+  text-align: center;
+}
+
+.resume-tpl-creative .header-name {
+  font-size: var(--font-size-h1);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-creative .header-title {
+  font-size: var(--font-size-h3);
+  font-weight: 300;
+  letter-spacing: 1px;
+  margin-bottom: var(--spacing-item);
+}
+
+.resume-tpl-creative .contact-info {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: var(--font-size-sm);
+}
+
+.resume-tpl-creative .creative-content {
+  padding: var(--spacing-section);
+}
+
+.resume-tpl-creative .section-title {
+  font-size: var(--font-size-h2);
+  font-weight: 700;
+  color: var(--resume-accent);
+  border-left: 4px solid var(--resume-accent);
+  padding-left: var(--spacing-item);
+  margin-top: var(--spacing-section);
+  margin-bottom: var(--spacing-item);
+  text-transform: uppercase;
+}
+
+.resume-tpl-creative .job-item {
+  margin-bottom: var(--spacing-item);
+  position: relative;
+  padding-left: 20px;
+}
+
+.resume-tpl-creative .job-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--resume-accent);
+}
+
+.resume-tpl-creative .job-title {
+  font-weight: 700;
+  font-size: var(--font-size-h3);
+}
+
+.resume-tpl-creative .job-meta {
+  font-weight: 500;
+  color: #666;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-creative .skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resume-tpl-creative .skill-pill {
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   5. ATS TEMPLATE
+   ========================================================================== */
+.resume-tpl-ats {
+  padding: var(--spacing-section);
+  color: #000;
+  background-color: transparent;
+  font-family: var(--resume-font, Arial, sans-serif);
+  line-height: 1.4;
+  user-select: text; /* Ensure text is selectable */
+}
+
+.resume-tpl-ats .header-name {
+  font-size: var(--font-size-h1);
+  font-weight: bold;
+  text-align: center;
+}
+
+.resume-tpl-ats .contact-info {
+  text-align: center;
+  font-size: var(--font-size-base);
+  margin-bottom: var(--spacing-section);
+}
+
+.resume-tpl-ats .section-title {
+  font-size: var(--font-size-h3);
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 1px dashed #000;
+  margin-top: var(--spacing-section);
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-tpl-ats .job-item {
+  margin-bottom: var(--spacing-item);
+}
+
+.resume-tpl-ats .job-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.resume-tpl-ats .job-title {
+  font-weight: bold;
+}
+
+.resume-tpl-ats .job-date {
+  text-align: right;
+}
+
+.resume-tpl-ats ul {
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+/* ==========================================================================
+   PRINT MEDIA QUERIES
+   ========================================================================== */
+@media print {
+  .resume-tpl-modern .modern-sidebar {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .resume-tpl-creative .creative-header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .resume-tpl-creative .skill-pill {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .resume-tpl-modern .modern-main .section-title {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .resume-tpl-minimal .section-title,
+  .resume-tpl-creative .section-title {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .resume-tpl-creative .job-item::before {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

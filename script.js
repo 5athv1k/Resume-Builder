@@ -1,11 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
-   Resume Made Easy — Application Logic
+   Resume Made Easy — Application Logic (v2.0)
    ═══════════════════════════════════════════════════════════════ */
 
 (function () {
   'use strict';
 
   /* ── State ───────────────────────────────────────────────── */
+  const STORAGE_KEY = 'resume_made_easy_data';
+
+  const defaultSettings = {
+    template: 'modern',
+    accentColor: '#6c63ff',
+    fontFamily: 'inter',
+    density: 'normal',
+    atsMode: false,
+  };
+
   const state = {
     personal: {
       fullName: '',
@@ -22,6 +32,7 @@
     education: [],
     skills: [],
     projects: [],
+    settings: { ...defaultSettings },
   };
 
   let currentSection = 'personal';
@@ -37,15 +48,33 @@
   const sidebar = $('#sidebar');
   const sidebarOverlay = $('#sidebar-overlay');
   const hamburger = $('#hamburger');
-  const mobileHeader = $('#mobile-header');
   const editorTitle = $('#editor-title');
   const editorSubtitle = $('#editor-subtitle');
+  const editorPanel = $('#editor-panel');
   const resumePage = $('#resume-page');
   const resumeContent = $('#resume-content');
   const resumeEmptyState = $('#resume-empty-state');
   const toastContainer = $('#toast-container');
   const previewPanel = $('#preview-panel');
-  const btnTogglePreview = $('#btn-toggle-preview');
+
+  /* ═══════════════════════════════════════════════════════════
+     TEMPLATE SYSTEM
+     ═══════════════════════════════════════════════════════════ */
+  function getActiveTemplate() {
+    if (state.settings.atsMode && window.RESUME_TEMPLATES && window.RESUME_TEMPLATES['ats']) {
+      return window.RESUME_TEMPLATES['ats'];
+    }
+    const name = state.settings.template || 'modern';
+    if (window.RESUME_TEMPLATES && window.RESUME_TEMPLATES[name]) {
+      return window.RESUME_TEMPLATES[name];
+    }
+    // Fallback: return first available template
+    if (window.RESUME_TEMPLATES) {
+      const keys = Object.keys(window.RESUME_TEMPLATES);
+      if (keys.length > 0) return window.RESUME_TEMPLATES[keys[0]];
+    }
+    return null;
+  }
 
   /* ── Navigation ──────────────────────────────────────────── */
   function switchSection(sectionId) {
@@ -59,13 +88,12 @@
     const section = $(`#section-${sectionId}`);
     if (section) {
       section.classList.remove('active');
-      void section.offsetWidth; // force reflow for animation
+      void section.offsetWidth;
       section.classList.add('active');
       editorTitle.textContent = section.dataset.title || '';
       editorSubtitle.textContent = section.dataset.subtitle || '';
     }
 
-    // Close mobile sidebar
     closeMobileSidebar();
   }
 
@@ -87,38 +115,35 @@
   }
 
   hamburger.addEventListener('click', () => {
-    if (sidebar.classList.contains('open')) {
-      closeMobileSidebar();
-    } else {
-      openMobileSidebar();
-    }
+    sidebar.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
   });
 
   sidebarOverlay.addEventListener('click', closeMobileSidebar);
 
-  /* ── Mobile Preview Toggle ───────────────────────────────── */
-  btnTogglePreview.addEventListener('click', () => {
-    previewPanel.classList.toggle('mobile-hidden');
+  /* ── Mobile Tab Switcher ─────────────────────────────────── */
+  $$('.mobile-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      $$('.mobile-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      if (tab.dataset.tab === 'preview') {
+        editorPanel.classList.add('mobile-hidden');
+        previewPanel.classList.remove('mobile-hidden');
+      } else {
+        editorPanel.classList.remove('mobile-hidden');
+        previewPanel.classList.add('mobile-hidden');
+      }
+    });
   });
 
   /* ── Personal Info Binding ───────────────────────────────── */
-  const personalFields = [
-    'fullName',
-    'jobTitle',
-    'email',
-    'phone',
-    'location',
-    'linkedin',
-    'website',
-    'github',
-  ];
+  const personalFields = ['fullName', 'jobTitle', 'email', 'phone', 'location', 'linkedin', 'website', 'github'];
 
   personalFields.forEach((field) => {
     const input = $(`#${field}`);
     if (input) {
       input.addEventListener('input', () => {
         state.personal[field] = input.value.trim();
-        renderPreview();
+        onStateChange();
       });
     }
   });
@@ -131,29 +156,26 @@
     const val = summaryText.value;
     state.summary = val;
     summaryCharCount.textContent = `${val.length} / 500`;
-    if (val.length > 500) {
-      summaryCharCount.style.color = 'var(--danger)';
-    } else {
-      summaryCharCount.style.color = 'var(--text-muted)';
-    }
-    renderPreview();
+    summaryCharCount.style.color = val.length > 500 ? 'var(--danger)' : 'var(--text-muted)';
+    onStateChange();
   });
 
   /* ═══════════════════════════════════════════════════════════
      DYNAMIC ENTRIES — Experience
      ═══════════════════════════════════════════════════════════ */
-  function createExperienceEntry() {
+  function createExperienceEntry(data) {
     experienceCounter++;
-    const id = `exp-${Date.now()}`;
+    const id = (data && data.id) || `exp-${Date.now()}-${experienceCounter}`;
     const entry = {
       id,
-      company: '',
-      title: '',
-      startDate: '',
-      endDate: '',
-      description: '',
+      company: (data && data.company) || '',
+      title: (data && data.title) || '',
+      startDate: (data && data.startDate) || '',
+      endDate: (data && data.endDate) || '',
+      description: (data && data.description) || '',
     };
-    state.experience.push(entry);
+
+    if (!data) state.experience.push(entry);
 
     const card = document.createElement('div');
     card.classList.add('entry-card');
@@ -168,23 +190,38 @@
       <div class="form-grid">
         <div class="form-group">
           <label>Job Title</label>
-          <input type="text" data-field="title" placeholder="e.g. Senior Engineer" />
+          <input type="text" data-field="title" placeholder="e.g. Senior Engineer" value="${escapeAttr(entry.title)}" />
         </div>
         <div class="form-group">
           <label>Company</label>
-          <input type="text" data-field="company" placeholder="e.g. Google" />
+          <input type="text" data-field="company" placeholder="e.g. Google" value="${escapeAttr(entry.company)}" />
         </div>
         <div class="form-group">
           <label>Start Date</label>
-          <input type="text" data-field="startDate" placeholder="e.g. Jan 2020" />
+          <input type="text" data-field="startDate" placeholder="e.g. Jan 2020" value="${escapeAttr(entry.startDate)}" />
         </div>
         <div class="form-group">
           <label>End Date</label>
-          <input type="text" data-field="endDate" placeholder="e.g. Present" />
+          <input type="text" data-field="endDate" placeholder="e.g. Present" value="${escapeAttr(entry.endDate)}" />
         </div>
         <div class="form-group full-width">
           <label>Description</label>
-          <textarea data-field="description" rows="4" placeholder="Describe your responsibilities, achievements, and impact. Use bullet points with • for best results."></textarea>
+          <textarea data-field="description" rows="4" placeholder="Describe your responsibilities and achievements...">${escapeHTML(entry.description)}</textarea>
+          <button class="btn-ai-action btn-ai-inline" type="button" data-ai="suggest-bullets" data-entry-id="${id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg>
+            Suggest Bullets
+          </button>
+        </div>
+      </div>
+      <div class="ai-suggestion-panel ai-inline-panel" data-ai-panel="${id}" style="display:none;">
+        <div class="ai-suggestion-header">
+          <span>AI Suggestions</span>
+          <button class="ai-suggestion-close" data-ai-close="${id}">&times;</button>
+        </div>
+        <div class="ai-suggestion-content" data-ai-content="${id}"></div>
+        <div class="ai-suggestion-actions">
+          <button class="btn-ai-accept" data-ai-accept="${id}">Append All</button>
+          <button class="btn-ai-discard" data-ai-discard="${id}">Discard</button>
         </div>
       </div>
     `;
@@ -195,7 +232,7 @@
     card.querySelectorAll('input, textarea').forEach((input) => {
       input.addEventListener('input', () => {
         entry[input.dataset.field] = input.value;
-        renderPreview();
+        onStateChange();
       });
     });
 
@@ -205,30 +242,37 @@
       card.style.opacity = '0';
       card.style.transform = 'translateY(-8px)';
       setTimeout(() => card.remove(), 200);
-      renderPreview();
+      onStateChange();
     });
 
-    renderPreview();
+    // AI suggest bullets button
+    const aiBtn = card.querySelector('[data-ai="suggest-bullets"]');
+    if (aiBtn) {
+      aiBtn.addEventListener('click', () => handleSuggestBullets(id, entry, card));
+    }
+
+    onStateChange();
   }
 
-  $('#btn-add-experience').addEventListener('click', createExperienceEntry);
+  $('#btn-add-experience').addEventListener('click', () => createExperienceEntry());
 
   /* ═══════════════════════════════════════════════════════════
      DYNAMIC ENTRIES — Education
      ═══════════════════════════════════════════════════════════ */
-  function createEducationEntry() {
+  function createEducationEntry(data) {
     educationCounter++;
-    const id = `edu-${Date.now()}`;
+    const id = (data && data.id) || `edu-${Date.now()}-${educationCounter}`;
     const entry = {
       id,
-      school: '',
-      degree: '',
-      startDate: '',
-      endDate: '',
-      gpa: '',
-      description: '',
+      school: (data && data.school) || '',
+      degree: (data && data.degree) || '',
+      startDate: (data && data.startDate) || '',
+      endDate: (data && data.endDate) || '',
+      gpa: (data && data.gpa) || '',
+      description: (data && data.description) || '',
     };
-    state.education.push(entry);
+
+    if (!data) state.education.push(entry);
 
     const card = document.createElement('div');
     card.classList.add('entry-card');
@@ -243,27 +287,27 @@
       <div class="form-grid">
         <div class="form-group">
           <label>School / University</label>
-          <input type="text" data-field="school" placeholder="e.g. MIT" />
+          <input type="text" data-field="school" placeholder="e.g. MIT" value="${escapeAttr(entry.school)}" />
         </div>
         <div class="form-group">
           <label>Degree</label>
-          <input type="text" data-field="degree" placeholder="e.g. B.S. Computer Science" />
+          <input type="text" data-field="degree" placeholder="e.g. B.S. Computer Science" value="${escapeAttr(entry.degree)}" />
         </div>
         <div class="form-group">
           <label>Start Date</label>
-          <input type="text" data-field="startDate" placeholder="e.g. Sep 2016" />
+          <input type="text" data-field="startDate" placeholder="e.g. Sep 2016" value="${escapeAttr(entry.startDate)}" />
         </div>
         <div class="form-group">
           <label>End Date</label>
-          <input type="text" data-field="endDate" placeholder="e.g. Jun 2020" />
+          <input type="text" data-field="endDate" placeholder="e.g. Jun 2020" value="${escapeAttr(entry.endDate)}" />
         </div>
         <div class="form-group">
           <label>GPA (optional)</label>
-          <input type="text" data-field="gpa" placeholder="e.g. 3.9 / 4.0" />
+          <input type="text" data-field="gpa" placeholder="e.g. 3.9 / 4.0" value="${escapeAttr(entry.gpa)}" />
         </div>
         <div class="form-group full-width">
           <label>Additional Details (optional)</label>
-          <textarea data-field="description" rows="2" placeholder="e.g. Dean's List, Relevant coursework, Honors..."></textarea>
+          <textarea data-field="description" rows="2" placeholder="e.g. Dean's List, Relevant coursework, Honors...">${escapeHTML(entry.description)}</textarea>
         </div>
       </div>
     `;
@@ -273,7 +317,7 @@
     card.querySelectorAll('input, textarea').forEach((input) => {
       input.addEventListener('input', () => {
         entry[input.dataset.field] = input.value;
-        renderPreview();
+        onStateChange();
       });
     });
 
@@ -282,28 +326,29 @@
       card.style.opacity = '0';
       card.style.transform = 'translateY(-8px)';
       setTimeout(() => card.remove(), 200);
-      renderPreview();
+      onStateChange();
     });
 
-    renderPreview();
+    onStateChange();
   }
 
-  $('#btn-add-education').addEventListener('click', createEducationEntry);
+  $('#btn-add-education').addEventListener('click', () => createEducationEntry());
 
   /* ═══════════════════════════════════════════════════════════
      DYNAMIC ENTRIES — Projects
      ═══════════════════════════════════════════════════════════ */
-  function createProjectEntry() {
+  function createProjectEntry(data) {
     projectCounter++;
-    const id = `proj-${Date.now()}`;
+    const id = (data && data.id) || `proj-${Date.now()}-${projectCounter}`;
     const entry = {
       id,
-      name: '',
-      description: '',
-      technologies: '',
-      link: '',
+      name: (data && data.name) || '',
+      description: (data && data.description) || '',
+      technologies: (data && data.technologies) || '',
+      link: (data && data.link) || '',
     };
-    state.projects.push(entry);
+
+    if (!data) state.projects.push(entry);
 
     const card = document.createElement('div');
     card.classList.add('entry-card');
@@ -318,19 +363,34 @@
       <div class="form-grid">
         <div class="form-group full-width">
           <label>Project Name</label>
-          <input type="text" data-field="name" placeholder="e.g. E-Commerce Platform" />
+          <input type="text" data-field="name" placeholder="e.g. E-Commerce Platform" value="${escapeAttr(entry.name)}" />
         </div>
         <div class="form-group full-width">
           <label>Description</label>
-          <textarea data-field="description" rows="3" placeholder="Describe the project, your role, and key outcomes..."></textarea>
+          <textarea data-field="description" rows="3" placeholder="Describe the project, your role, and key outcomes...">${escapeHTML(entry.description)}</textarea>
+          <button class="btn-ai-action btn-ai-inline" type="button" data-ai="suggest-bullets" data-entry-id="${id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg>
+            Suggest Bullets
+          </button>
         </div>
         <div class="form-group">
           <label>Technologies Used</label>
-          <input type="text" data-field="technologies" placeholder="e.g. React, Node.js, PostgreSQL" />
+          <input type="text" data-field="technologies" placeholder="e.g. React, Node.js, PostgreSQL" value="${escapeAttr(entry.technologies)}" />
         </div>
         <div class="form-group">
           <label>Project Link (optional)</label>
-          <input type="url" data-field="link" placeholder="e.g. github.com/project" />
+          <input type="url" data-field="link" placeholder="e.g. github.com/project" value="${escapeAttr(entry.link)}" />
+        </div>
+      </div>
+      <div class="ai-suggestion-panel ai-inline-panel" data-ai-panel="${id}" style="display:none;">
+        <div class="ai-suggestion-header">
+          <span>AI Suggestions</span>
+          <button class="ai-suggestion-close" data-ai-close="${id}">&times;</button>
+        </div>
+        <div class="ai-suggestion-content" data-ai-content="${id}"></div>
+        <div class="ai-suggestion-actions">
+          <button class="btn-ai-accept" data-ai-accept="${id}">Append All</button>
+          <button class="btn-ai-discard" data-ai-discard="${id}">Discard</button>
         </div>
       </div>
     `;
@@ -340,7 +400,7 @@
     card.querySelectorAll('input, textarea').forEach((input) => {
       input.addEventListener('input', () => {
         entry[input.dataset.field] = input.value;
-        renderPreview();
+        onStateChange();
       });
     });
 
@@ -349,13 +409,19 @@
       card.style.opacity = '0';
       card.style.transform = 'translateY(-8px)';
       setTimeout(() => card.remove(), 200);
-      renderPreview();
+      onStateChange();
     });
 
-    renderPreview();
+    // AI suggest bullets
+    const aiBtn = card.querySelector('[data-ai="suggest-bullets"]');
+    if (aiBtn) {
+      aiBtn.addEventListener('click', () => handleSuggestBullets(id, entry, card));
+    }
+
+    onStateChange();
   }
 
-  $('#btn-add-project').addEventListener('click', createProjectEntry);
+  $('#btn-add-project').addEventListener('click', () => createProjectEntry());
 
   /* ═══════════════════════════════════════════════════════════
      SKILLS
@@ -370,10 +436,9 @@
       showToast('Skill already added', 'error');
       return;
     }
-
     state.skills.push(name);
     renderSkillTags();
-    renderPreview();
+    onStateChange();
     skillInput.value = '';
     skillInput.focus();
   }
@@ -381,7 +446,7 @@
   function removeSkill(skillName) {
     state.skills = state.skills.filter((s) => s !== skillName);
     renderSkillTags();
-    renderPreview();
+    onStateChange();
   }
 
   function renderSkillTags() {
@@ -390,9 +455,8 @@
         (skill) => `
       <span class="skill-tag">
         ${escapeHTML(skill)}
-        <button type="button" data-remove-skill="${escapeHTML(skill)}" aria-label="Remove ${escapeHTML(skill)}">&times;</button>
-      </span>
-    `
+        <button type="button" data-remove-skill="${escapeAttr(skill)}" aria-label="Remove ${escapeAttr(skill)}">&times;</button>
+      </span>`
       )
       .join('');
 
@@ -402,7 +466,6 @@
   }
 
   $('#btn-add-skill').addEventListener('click', () => addSkill(skillInput.value));
-
   skillInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -411,22 +474,69 @@
   });
 
   /* ═══════════════════════════════════════════════════════════
+     TEMPLATE GALLERY
+     ═══════════════════════════════════════════════════════════ */
+  $$('.template-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      $$('.template-card').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
+      state.settings.template = card.dataset.template;
+      onStateChange();
+    });
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     CUSTOMIZATION CONTROLS
+     ═══════════════════════════════════════════════════════════ */
+  const accentColorInput = $('#accentColor');
+  const accentColorValue = $('#accentColorValue');
+  const fontFamilySelect = $('#fontFamily');
+
+  accentColorInput.addEventListener('input', () => {
+    state.settings.accentColor = accentColorInput.value;
+    accentColorValue.textContent = accentColorInput.value;
+    onStateChange();
+  });
+
+  fontFamilySelect.addEventListener('change', () => {
+    state.settings.fontFamily = fontFamilySelect.value;
+    onStateChange();
+  });
+
+  $$('input[name="density"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      state.settings.density = radio.value;
+      onStateChange();
+    });
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     ATS MODE TOGGLE
+     ═══════════════════════════════════════════════════════════ */
+  const atsToggle = $('#ats-toggle');
+  atsToggle.addEventListener('change', () => {
+    state.settings.atsMode = atsToggle.checked;
+    onStateChange();
+    showToast(atsToggle.checked ? 'ATS Mode enabled - optimized for tracking systems' : 'ATS Mode disabled', 'success');
+  });
+
+  /* ═══════════════════════════════════════════════════════════
      LIVE PREVIEW RENDERING
      ═══════════════════════════════════════════════════════════ */
   function escapeHTML(str) {
     const div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
+    div.appendChild(document.createTextNode(str || ''));
     return div.innerHTML;
+  }
+
+  function escapeAttr(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function hasAnyData() {
     const p = state.personal;
     return (
-      p.fullName ||
-      p.jobTitle ||
-      p.email ||
-      p.phone ||
-      p.location ||
+      p.fullName || p.jobTitle || p.email || p.phone || p.location ||
       state.summary ||
       state.experience.length > 0 ||
       state.education.length > 0 ||
@@ -445,131 +555,22 @@
     resumeEmptyState.style.display = 'none';
     resumeContent.style.display = 'block';
 
-    const p = state.personal;
-    let html = '';
-
-    // ── Header ──
-    if (p.fullName || p.jobTitle || p.email || p.phone || p.location || p.linkedin || p.website || p.github) {
-      html += '<div class="resume-header">';
-      if (p.fullName) {
-        html += `<div class="resume-name">${escapeHTML(p.fullName)}</div>`;
-      }
-      if (p.jobTitle) {
-        html += `<div class="resume-title">${escapeHTML(p.jobTitle)}</div>`;
-      }
-
-      const contactItems = [];
-      if (p.email) contactItems.push(`<span class="resume-contact-item">${escapeHTML(p.email)}</span>`);
-      if (p.phone) contactItems.push(`<span class="resume-contact-item">${escapeHTML(p.phone)}</span>`);
-      if (p.location) contactItems.push(`<span class="resume-contact-item">${escapeHTML(p.location)}</span>`);
-      if (p.linkedin) contactItems.push(`<span class="resume-contact-item">${escapeHTML(p.linkedin)}</span>`);
-      if (p.website) contactItems.push(`<span class="resume-contact-item">${escapeHTML(p.website)}</span>`);
-      if (p.github) contactItems.push(`<span class="resume-contact-item">${escapeHTML(p.github)}</span>`);
-
-      if (contactItems.length > 0) {
-        html += `<div class="resume-contact">${contactItems.join('<span class="resume-contact-divider">|</span>')}</div>`;
-      }
-
-      html += '</div>';
+    const template = getActiveTemplate();
+    if (template && template.renderHTML) {
+      resumeContent.innerHTML = template.renderHTML(state, state.settings);
+    } else {
+      // Fallback: basic rendering if no templates loaded
+      resumeContent.innerHTML = '<div style="padding:40px;color:#999;text-align:center;">Template not loaded. Please refresh the page.</div>';
     }
+  }
 
-    // ── Summary ──
-    if (state.summary.trim()) {
-      html += `
-        <div class="resume-section">
-          <div class="resume-section-title">Professional Summary</div>
-          <div class="resume-summary-text">${escapeHTML(state.summary)}</div>
-        </div>
-      `;
-    }
-
-    // ── Experience ──
-    const filledExperience = state.experience.filter(
-      (e) => e.title || e.company || e.description
-    );
-    if (filledExperience.length > 0) {
-      html += '<div class="resume-section"><div class="resume-section-title">Work Experience</div>';
-      filledExperience.forEach((exp) => {
-        const dates =
-          exp.startDate || exp.endDate
-            ? `${escapeHTML(exp.startDate)}${exp.startDate && exp.endDate ? ' — ' : ''}${escapeHTML(exp.endDate)}`
-            : '';
-
-        html += `
-          <div class="resume-entry">
-            <div class="resume-entry-header">
-              <span class="resume-entry-primary">${escapeHTML(exp.title || '')}</span>
-              ${dates ? `<span class="resume-entry-dates">${dates}</span>` : ''}
-            </div>
-            ${exp.company ? `<div class="resume-entry-secondary">${escapeHTML(exp.company)}</div>` : ''}
-            ${exp.description ? `<div class="resume-entry-description">${escapeHTML(exp.description)}</div>` : ''}
-          </div>
-        `;
-      });
-      html += '</div>';
-    }
-
-    // ── Education ──
-    const filledEducation = state.education.filter(
-      (e) => e.school || e.degree || e.description
-    );
-    if (filledEducation.length > 0) {
-      html += '<div class="resume-section"><div class="resume-section-title">Education</div>';
-      filledEducation.forEach((edu) => {
-        const dates =
-          edu.startDate || edu.endDate
-            ? `${escapeHTML(edu.startDate)}${edu.startDate && edu.endDate ? ' — ' : ''}${escapeHTML(edu.endDate)}`
-            : '';
-
-        html += `
-          <div class="resume-entry">
-            <div class="resume-entry-header">
-              <span class="resume-entry-primary">${escapeHTML(edu.degree || edu.school || '')}</span>
-              ${dates ? `<span class="resume-entry-dates">${dates}</span>` : ''}
-            </div>
-            ${edu.school && edu.degree ? `<div class="resume-entry-secondary">${escapeHTML(edu.school)}${edu.gpa ? '  •  GPA: ' + escapeHTML(edu.gpa) : ''}</div>` : ''}
-            ${!edu.degree && edu.gpa ? `<div class="resume-entry-secondary">GPA: ${escapeHTML(edu.gpa)}</div>` : ''}
-            ${edu.description ? `<div class="resume-entry-description">${escapeHTML(edu.description)}</div>` : ''}
-          </div>
-        `;
-      });
-      html += '</div>';
-    }
-
-    // ── Skills ──
-    if (state.skills.length > 0) {
-      html += `
-        <div class="resume-section">
-          <div class="resume-section-title">Skills</div>
-          <div class="resume-skills-list">
-            ${state.skills.map((s) => `<span class="resume-skill-item">${escapeHTML(s)}</span>`).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    // ── Projects ──
-    const filledProjects = state.projects.filter(
-      (e) => e.name || e.description
-    );
-    if (filledProjects.length > 0) {
-      html += '<div class="resume-section"><div class="resume-section-title">Projects</div>';
-      filledProjects.forEach((proj) => {
-        html += `
-          <div class="resume-entry">
-            <div class="resume-entry-header">
-              <span class="resume-entry-primary">${escapeHTML(proj.name || '')}</span>
-            </div>
-            ${proj.description ? `<div class="resume-entry-description">${escapeHTML(proj.description)}</div>` : ''}
-            ${proj.technologies ? `<div class="resume-entry-tech">Tech: ${escapeHTML(proj.technologies)}</div>` : ''}
-            ${proj.link ? `<div class="resume-entry-link">${escapeHTML(proj.link)}</div>` : ''}
-          </div>
-        `;
-      });
-      html += '</div>';
-    }
-
-    resumeContent.innerHTML = html;
+  /* ═══════════════════════════════════════════════════════════
+     STATE CHANGE HANDLER (central dispatcher)
+     ═══════════════════════════════════════════════════════════ */
+  function onStateChange() {
+    renderPreview();
+    updateProgress();
+    saveToLocalStorage();
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -584,21 +585,15 @@
   }
 
   $('#btn-zoom-in').addEventListener('click', () => {
-    if (zoomLevel < 150) {
-      zoomLevel += 10;
-      updateZoom();
-    }
+    if (zoomLevel < 150) { zoomLevel += 10; updateZoom(); }
   });
 
   $('#btn-zoom-out').addEventListener('click', () => {
-    if (zoomLevel > 50) {
-      zoomLevel -= 10;
-      updateZoom();
-    }
+    if (zoomLevel > 50) { zoomLevel -= 10; updateZoom(); }
   });
 
   /* ═══════════════════════════════════════════════════════════
-     PDF EXPORT
+     PDF EXPORT (template-dispatched)
      ═══════════════════════════════════════════════════════════ */
   $('#btn-download-pdf').addEventListener('click', async () => {
     if (!hasAnyData()) {
@@ -609,7 +604,6 @@
     const downloadBtn = $('#btn-download-pdf');
     downloadBtn.classList.add('loading');
 
-    // Show loading overlay
     const overlay = document.createElement('div');
     overlay.classList.add('pdf-overlay');
     overlay.innerHTML = '<div class="spinner"></div><p>Generating your PDF...</p>';
@@ -619,297 +613,17 @@
       if (!window.jspdf || !window.jspdf.jsPDF) {
         throw new Error('PDF library failed to load. Please check your internet connection and refresh.');
       }
+
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const marginLeft = 20;
-      const marginRight = 20;
-      const contentWidth = pageWidth - marginLeft - marginRight;
-      let y = 22;
 
-      // ── Helper: check if we need a new page ──
-      function checkPage(needed) {
-        if (y + needed > pageHeight - 20) {
-          pdf.addPage();
-          y = 20;
-        }
+      const template = getActiveTemplate();
+      if (template && template.renderPDF) {
+        template.renderPDF(pdf, state, state.settings);
+      } else {
+        throw new Error('No template renderer available.');
       }
 
-      // ── Helper: draw wrapped text, returns new Y ──
-      function drawWrapped(text, x, startY, maxWidth, lineH) {
-        const lines = pdf.splitTextToSize(text, maxWidth);
-        lines.forEach((line) => {
-          checkPage(lineH);
-          pdf.text(line, x, startY);
-          startY += lineH;
-        });
-        return startY;
-      }
-
-      // ── Helper: draw a section title with underline ──
-      function drawSectionTitle(title) {
-        checkPage(14);
-        y += 4;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(11);
-        pdf.setTextColor(26, 26, 46);
-        pdf.text(title.toUpperCase(), marginLeft, y);
-        y += 2;
-        pdf.setDrawColor(220, 220, 220);
-        pdf.setLineWidth(0.4);
-        pdf.line(marginLeft, y, pageWidth - marginRight, y);
-        y += 6;
-      }
-
-      const p = state.personal;
-
-      // ═══════════ HEADER ═══════════
-      if (p.fullName) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(22);
-        pdf.setTextColor(26, 26, 46);
-        pdf.text(p.fullName.toUpperCase(), pageWidth / 2, y, { align: 'center' });
-        y += 8;
-      }
-
-      if (p.jobTitle) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(10);
-        pdf.setTextColor(108, 99, 255);
-        pdf.text(p.jobTitle.toUpperCase(), pageWidth / 2, y, { align: 'center' });
-        y += 7;
-      }
-
-      // Contact info line
-      const contactParts = [];
-      if (p.email) contactParts.push(p.email);
-      if (p.phone) contactParts.push(p.phone);
-      if (p.location) contactParts.push(p.location);
-      if (p.linkedin) contactParts.push(p.linkedin);
-      if (p.website) contactParts.push(p.website);
-      if (p.github) contactParts.push(p.github);
-
-      if (contactParts.length > 0) {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(8.5);
-        pdf.setTextColor(100, 100, 100);
-        const contactLine = contactParts.join('  |  ');
-        const contactLines = pdf.splitTextToSize(contactLine, contentWidth);
-        contactLines.forEach((line) => {
-          pdf.text(line, pageWidth / 2, y, { align: 'center' });
-          y += 4;
-        });
-        y += 2;
-      }
-
-      // Header divider
-      if (p.fullName || p.jobTitle) {
-        pdf.setDrawColor(45, 45, 94);
-        pdf.setLineWidth(0.6);
-        pdf.line(marginLeft, y, pageWidth - marginRight, y);
-        y += 8;
-      }
-
-      // ═══════════ SUMMARY ═══════════
-      if (state.summary.trim()) {
-        drawSectionTitle('Professional Summary');
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9.5);
-        pdf.setTextColor(68, 68, 68);
-        y = drawWrapped(state.summary, marginLeft, y, contentWidth, 4.5);
-        y += 2;
-      }
-
-      // ═══════════ EXPERIENCE ═══════════
-      const filledExperience = state.experience.filter(
-        (e) => e.title || e.company || e.description
-      );
-      if (filledExperience.length > 0) {
-        drawSectionTitle('Work Experience');
-
-        filledExperience.forEach((exp, idx) => {
-          checkPage(16);
-
-          // Title and dates on same line
-          if (exp.title) {
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(10);
-            pdf.setTextColor(26, 26, 46);
-            pdf.text(exp.title, marginLeft, y);
-          }
-
-          const dates = [exp.startDate, exp.endDate].filter(Boolean).join(' - ');
-          if (dates) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(120, 120, 120);
-            pdf.text(dates, pageWidth - marginRight, y, { align: 'right' });
-          }
-          y += 4.5;
-
-          // Company
-          if (exp.company) {
-            pdf.setFont('helvetica', 'italic');
-            pdf.setFontSize(9.5);
-            pdf.setTextColor(85, 85, 85);
-            pdf.text(exp.company, marginLeft, y);
-            y += 4.5;
-          }
-
-          // Description
-          if (exp.description) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(9);
-            pdf.setTextColor(68, 68, 68);
-            y = drawWrapped(exp.description, marginLeft, y, contentWidth, 4.2);
-          }
-
-          if (idx < filledExperience.length - 1) y += 4;
-        });
-        y += 2;
-      }
-
-      // ═══════════ EDUCATION ═══════════
-      const filledEducation = state.education.filter(
-        (e) => e.school || e.degree || e.description
-      );
-      if (filledEducation.length > 0) {
-        drawSectionTitle('Education');
-
-        filledEducation.forEach((edu, idx) => {
-          checkPage(16);
-
-          // Degree and dates
-          const mainText = edu.degree || edu.school || '';
-          if (mainText) {
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(10);
-            pdf.setTextColor(26, 26, 46);
-            pdf.text(mainText, marginLeft, y);
-          }
-
-          const dates = [edu.startDate, edu.endDate].filter(Boolean).join(' - ');
-          if (dates) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(120, 120, 120);
-            pdf.text(dates, pageWidth - marginRight, y, { align: 'right' });
-          }
-          y += 4.5;
-
-          // School + GPA
-          const subParts = [];
-          if (edu.school && edu.degree) subParts.push(edu.school);
-          if (edu.gpa) subParts.push('GPA: ' + edu.gpa);
-          if (subParts.length > 0) {
-            pdf.setFont('helvetica', 'italic');
-            pdf.setFontSize(9.5);
-            pdf.setTextColor(85, 85, 85);
-            pdf.text(subParts.join('  |  '), marginLeft, y);
-            y += 4.5;
-          }
-
-          // Description
-          if (edu.description) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(9);
-            pdf.setTextColor(68, 68, 68);
-            y = drawWrapped(edu.description, marginLeft, y, contentWidth, 4.2);
-          }
-
-          if (idx < filledEducation.length - 1) y += 4;
-        });
-        y += 2;
-      }
-
-      // ═══════════ SKILLS ═══════════
-      if (state.skills.length > 0) {
-        drawSectionTitle('Skills');
-
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9.5);
-        pdf.setTextColor(79, 70, 229);
-
-        // Lay out skill tags in a row-wrapping flow
-        let tagX = marginLeft;
-        const tagH = 6;
-        const tagPadX = 4;
-        const tagGap = 3;
-
-        state.skills.forEach((skill) => {
-          const textW = pdf.getTextWidth(skill);
-          const boxW = textW + tagPadX * 2;
-
-          // Wrap to next line if needed
-          if (tagX + boxW > pageWidth - marginRight) {
-            tagX = marginLeft;
-            y += tagH + 3;
-            checkPage(tagH + 3);
-          }
-
-          // Draw tag background
-          pdf.setFillColor(240, 239, 255);
-          pdf.rect(tagX, y - 4, boxW, tagH, 'F');
-
-          // Draw tag text
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(8.5);
-          pdf.setTextColor(79, 70, 229);
-          pdf.text(skill, tagX + tagPadX, y);
-
-          tagX += boxW + tagGap;
-        });
-
-        y += tagH + 4;
-      }
-
-      // ═══════════ PROJECTS ═══════════
-      const filledProjects = state.projects.filter(
-        (e) => e.name || e.description
-      );
-      if (filledProjects.length > 0) {
-        drawSectionTitle('Projects');
-
-        filledProjects.forEach((proj, idx) => {
-          checkPage(14);
-
-          if (proj.name) {
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(10);
-            pdf.setTextColor(26, 26, 46);
-            pdf.text(proj.name, marginLeft, y);
-            y += 4.5;
-          }
-
-          if (proj.description) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(9);
-            pdf.setTextColor(68, 68, 68);
-            y = drawWrapped(proj.description, marginLeft, y, contentWidth, 4.2);
-          }
-
-          if (proj.technologies) {
-            pdf.setFont('helvetica', 'italic');
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(100, 100, 100);
-            pdf.text('Tech: ' + proj.technologies, marginLeft, y);
-            y += 4.2;
-          }
-
-          if (proj.link) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(108, 99, 255);
-            pdf.text(proj.link, marginLeft, y);
-            y += 4.2;
-          }
-
-          if (idx < filledProjects.length - 1) y += 4;
-        });
-      }
-
-      // ── Save ──
       const fileName = state.personal.fullName
         ? `${state.personal.fullName.replace(/\s+/g, '_')}_Resume.pdf`
         : 'Resume.pdf';
@@ -918,7 +632,7 @@
       showToast('PDF downloaded successfully!', 'success');
     } catch (err) {
       console.error('PDF generation error:', err);
-      showToast('PDF Error: ' + (err.message || 'Unknown error. Check console.'), 'error');
+      showToast('PDF Error: ' + (err.message || 'Unknown error'), 'error');
     } finally {
       overlay.remove();
       downloadBtn.classList.remove('loading');
@@ -940,11 +654,8 @@
      CLEAR ALL
      ═══════════════════════════════════════════════════════════ */
   $('#btn-clear').addEventListener('click', () => {
-    if (!confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Are you sure you want to clear all data? This cannot be undone.')) return;
 
-    // Reset state
     personalFields.forEach((f) => {
       state.personal[f] = '';
       const input = $(`#${f}`);
@@ -969,26 +680,412 @@
     $('#project-entries').innerHTML = '';
     skillsTagsContainer.innerHTML = '';
 
-    renderPreview();
+    localStorage.removeItem(STORAGE_KEY);
+    onStateChange();
     showToast('All data cleared.', 'success');
     switchSection('personal');
   });
 
   /* ═══════════════════════════════════════════════════════════
+     PROGRESS INDICATOR
+     ═══════════════════════════════════════════════════════════ */
+  function updateProgress() {
+    let completed = 0;
+    const checks = {
+      personal: !!(state.personal.fullName && state.personal.email),
+      summary: !!state.summary.trim(),
+      experience: state.experience.some((e) => e.title || e.company),
+      education: state.education.some((e) => e.school || e.degree),
+      skills: state.skills.length > 0,
+      projects: state.projects.some((p) => p.name),
+    };
+
+    Object.keys(checks).forEach((key) => {
+      const el = $(`#check-${key}`);
+      if (el) {
+        if (checks[key]) {
+          el.textContent = '✓';
+          el.classList.add('complete');
+          completed++;
+        } else {
+          el.textContent = '';
+          el.classList.remove('complete');
+        }
+      }
+    });
+
+    const progressFill = $('#progress-fill');
+    const progressText = $('#progress-text');
+    if (progressFill) progressFill.style.width = `${(completed / 6) * 100}%`;
+    if (progressText) progressText.textContent = `${completed} of 6 sections complete`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     LOCALSTORAGE SAVE / LOAD
+     ═══════════════════════════════════════════════════════════ */
+  function saveToLocalStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // localStorage full or unavailable — silently fail
+    }
+  }
+
+  function loadFromLocalStorage() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return false;
+
+      const parsed = JSON.parse(saved);
+      if (!parsed || !parsed.personal) return false;
+
+      // Restore personal info
+      Object.keys(state.personal).forEach((key) => {
+        if (parsed.personal[key] !== undefined) {
+          state.personal[key] = parsed.personal[key];
+        }
+      });
+
+      // Restore summary
+      state.summary = parsed.summary || '';
+
+      // Restore arrays
+      state.experience = parsed.experience || [];
+      state.education = parsed.education || [];
+      state.skills = parsed.skills || [];
+      state.projects = parsed.projects || [];
+
+      // Restore settings
+      if (parsed.settings) {
+        state.settings = { ...defaultSettings, ...parsed.settings };
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Populate all form elements from state (used after loading from localStorage or examples)
+   */
+  function populateFormFromState() {
+    // Personal fields
+    personalFields.forEach((f) => {
+      const input = $(`#${f}`);
+      if (input) input.value = state.personal[f] || '';
+    });
+
+    // Summary
+    summaryText.value = state.summary || '';
+    summaryCharCount.textContent = `${state.summary.length} / 500`;
+
+    // Clear and recreate dynamic entries
+    experienceCounter = 0;
+    educationCounter = 0;
+    projectCounter = 0;
+    $('#experience-entries').innerHTML = '';
+    $('#education-entries').innerHTML = '';
+    $('#project-entries').innerHTML = '';
+
+    state.experience.forEach((entry) => createExperienceEntry(entry));
+    state.education.forEach((entry) => createEducationEntry(entry));
+    state.projects.forEach((entry) => createProjectEntry(entry));
+
+    // Skills
+    renderSkillTags();
+
+    // Settings UI
+    accentColorInput.value = state.settings.accentColor;
+    accentColorValue.textContent = state.settings.accentColor;
+    fontFamilySelect.value = state.settings.fontFamily;
+    atsToggle.checked = state.settings.atsMode;
+
+    // Density radio
+    const densityRadio = $(`input[name="density"][value="${state.settings.density}"]`);
+    if (densityRadio) densityRadio.checked = true;
+
+    // Template card
+    $$('.template-card').forEach((c) => c.classList.remove('active'));
+    const activeCard = $(`[data-template="${state.settings.template}"]`);
+    if (activeCard) activeCard.classList.add('active');
+
+    onStateChange();
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     EXAMPLES GALLERY
+     ═══════════════════════════════════════════════════════════ */
+  function initExamplesGallery() {
+    const gallery = $('#examples-gallery');
+    if (!gallery || !window.RESUME_EXAMPLES) return;
+
+    gallery.innerHTML = window.RESUME_EXAMPLES.map((ex, i) => `
+      <button class="example-card" data-example="${i}">
+        <span class="example-icon">${ex.icon}</span>
+        <span class="example-label">${escapeHTML(ex.label)}</span>
+        <span class="example-category">${escapeHTML(ex.category)}</span>
+      </button>
+    `).join('');
+
+    gallery.querySelectorAll('.example-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const idx = parseInt(card.dataset.example, 10);
+        const example = window.RESUME_EXAMPLES[idx];
+        if (!example) return;
+
+        if (!confirm('This will replace your current data with the example. Continue?')) return;
+
+        // Deep copy example data into state
+        const data = example.data;
+        Object.keys(state.personal).forEach((k) => {
+          state.personal[k] = (data.personal && data.personal[k]) || '';
+        });
+        state.summary = data.summary || '';
+        state.experience = JSON.parse(JSON.stringify(data.experience || []));
+        state.education = JSON.parse(JSON.stringify(data.education || []));
+        state.skills = [...(data.skills || [])];
+        state.projects = JSON.parse(JSON.stringify(data.projects || []));
+
+        populateFormFromState();
+        showToast(`Loaded "${example.label}" example`, 'success');
+        switchSection('personal');
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     AI SUGGESTIONS
+     ═══════════════════════════════════════════════════════════ */
+
+  // API Key management
+  const apiKeyInput = $('#aiApiKey');
+  const btnSaveKey = $('#btn-save-key');
+  const btnToggleKey = $('#btn-toggle-key');
+
+  if (btnSaveKey) {
+    btnSaveKey.addEventListener('click', () => {
+      if (window.AI_SUGGESTIONS) {
+        window.AI_SUGGESTIONS.setApiKey(apiKeyInput.value);
+        showToast('API key saved', 'success');
+      }
+    });
+  }
+
+  if (btnToggleKey) {
+    btnToggleKey.addEventListener('click', () => {
+      apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+    });
+  }
+
+  // Load saved API key
+  if (window.AI_SUGGESTIONS && window.AI_SUGGESTIONS.hasApiKey()) {
+    apiKeyInput.value = window.AI_SUGGESTIONS.getApiKey();
+  }
+
+  // Suggest bullet points for experience/project
+  async function handleSuggestBullets(entryId, entry, card) {
+    if (!window.AI_SUGGESTIONS) {
+      showToast('AI module not loaded.', 'error');
+      return;
+    }
+    if (!window.AI_SUGGESTIONS.hasApiKey()) {
+      showToast('Please add your Claude API key in Templates & Settings > AI Settings.', 'error');
+      switchSection('templates');
+      return;
+    }
+
+    const btn = card.querySelector(`[data-entry-id="${entryId}"]`);
+    const panel = card.querySelector(`[data-ai-panel="${entryId}"]`);
+    const content = card.querySelector(`[data-ai-content="${entryId}"]`);
+
+    if (!btn || !panel || !content) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ai-spinner"></span> Generating...';
+
+    try {
+      const jobTitle = entry.title || entry.name || state.personal.jobTitle || '';
+      const company = entry.company || '';
+      const keywords = entry.description || entry.technologies || '';
+
+      const bullets = await window.AI_SUGGESTIONS.suggestBulletPoints(jobTitle, company, keywords);
+
+      content.innerHTML = bullets.map((b) => `
+        <div class="ai-bullet">
+          <span>* ${escapeHTML(b)}</span>
+          <button class="btn-ai-insert-one" data-bullet="${escapeAttr(b)}">Insert</button>
+        </div>
+      `).join('');
+
+      // Individual insert buttons
+      content.querySelectorAll('.btn-ai-insert-one').forEach((insertBtn) => {
+        insertBtn.addEventListener('click', () => {
+          const textarea = card.querySelector('textarea[data-field="description"]');
+          if (textarea) {
+            textarea.value = (textarea.value ? textarea.value + '\n' : '') + '* ' + insertBtn.dataset.bullet;
+            entry.description = textarea.value;
+            onStateChange();
+            insertBtn.textContent = 'Inserted!';
+            insertBtn.disabled = true;
+          }
+        });
+      });
+
+      // Accept all button
+      const acceptBtn = card.querySelector(`[data-ai-accept="${entryId}"]`);
+      if (acceptBtn) {
+        acceptBtn.onclick = () => {
+          const textarea = card.querySelector('textarea[data-field="description"]');
+          if (textarea) {
+            const newText = bullets.map((b) => '* ' + b).join('\n');
+            textarea.value = (textarea.value ? textarea.value + '\n' : '') + newText;
+            entry.description = textarea.value;
+            onStateChange();
+          }
+          panel.style.display = 'none';
+        };
+      }
+
+      // Discard button
+      const discardBtn = card.querySelector(`[data-ai-discard="${entryId}"]`);
+      if (discardBtn) {
+        discardBtn.onclick = () => { panel.style.display = 'none'; };
+      }
+
+      // Close button
+      const closeBtn = card.querySelector(`[data-ai-close="${entryId}"]`);
+      if (closeBtn) {
+        closeBtn.onclick = () => { panel.style.display = 'none'; };
+      }
+
+      panel.style.display = 'block';
+    } catch (err) {
+      showToast('AI Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg> Suggest Bullets';
+    }
+  }
+
+  // Polish Summary
+  const btnPolishSummary = $('#btn-polish-summary');
+  const aiSummaryPanel = $('#ai-summary-panel');
+  const aiSummaryContent = $('#ai-summary-content');
+
+  if (btnPolishSummary) {
+    btnPolishSummary.addEventListener('click', async () => {
+      if (!window.AI_SUGGESTIONS) {
+        showToast('AI module not loaded.', 'error');
+        return;
+      }
+      if (!window.AI_SUGGESTIONS.hasApiKey()) {
+        showToast('Please add your Claude API key in Templates & Settings > AI Settings.', 'error');
+        switchSection('templates');
+        return;
+      }
+      if (!state.summary.trim()) {
+        showToast('Write a summary first, then polish it with AI.', 'error');
+        return;
+      }
+
+      btnPolishSummary.disabled = true;
+      btnPolishSummary.innerHTML = '<span class="ai-spinner"></span> Polishing...';
+
+      try {
+        const polished = await window.AI_SUGGESTIONS.polishSummary(state.summary, state.personal.jobTitle);
+        aiSummaryContent.innerHTML = `
+          <div class="ai-diff">
+            <div class="ai-diff-label">Original:</div>
+            <div class="ai-diff-text ai-diff-old">${escapeHTML(state.summary)}</div>
+            <div class="ai-diff-label">Polished:</div>
+            <div class="ai-diff-text ai-diff-new">${escapeHTML(polished)}</div>
+          </div>
+        `;
+        aiSummaryPanel.style.display = 'block';
+
+        $('#ai-summary-accept').onclick = () => {
+          state.summary = polished;
+          summaryText.value = polished;
+          summaryCharCount.textContent = `${polished.length} / 500`;
+          aiSummaryPanel.style.display = 'none';
+          onStateChange();
+          showToast('Summary updated!', 'success');
+        };
+
+        $('#ai-summary-discard').onclick = () => {
+          aiSummaryPanel.style.display = 'none';
+        };
+
+        $('#ai-summary-close').onclick = () => {
+          aiSummaryPanel.style.display = 'none';
+        };
+      } catch (err) {
+        showToast('AI Error: ' + err.message, 'error');
+      } finally {
+        btnPolishSummary.disabled = false;
+        btnPolishSummary.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg> Polish with AI';
+      }
+    });
+  }
+
+  // Suggest Skills
+  const btnSuggestSkills = $('#btn-suggest-skills');
+  const aiSkillsPanel = $('#ai-skills-panel');
+  const aiSkillsContent = $('#ai-skills-content');
+
+  if (btnSuggestSkills) {
+    btnSuggestSkills.addEventListener('click', async () => {
+      if (!window.AI_SUGGESTIONS || !window.AI_SUGGESTIONS.hasApiKey()) {
+        showToast('Please add your Claude API key in Templates & Settings > AI Settings.', 'error');
+        switchSection('templates');
+        return;
+      }
+
+      btnSuggestSkills.disabled = true;
+      btnSuggestSkills.innerHTML = '<span class="ai-spinner"></span> Suggesting...';
+
+      try {
+        const suggested = await window.AI_SUGGESTIONS.suggestSkills(state.personal.jobTitle, state.skills);
+        aiSkillsContent.innerHTML = suggested.map((s) => `
+          <button class="ai-skill-suggestion" data-skill="${escapeAttr(s)}">${escapeHTML(s)} <span>+ Add</span></button>
+        `).join('');
+
+        aiSkillsContent.querySelectorAll('.ai-skill-suggestion').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            addSkill(btn.dataset.skill);
+            btn.classList.add('added');
+            btn.querySelector('span').textContent = 'Added!';
+            btn.disabled = true;
+          });
+        });
+
+        aiSkillsPanel.style.display = 'block';
+
+        $('#ai-skills-close').onclick = () => {
+          aiSkillsPanel.style.display = 'none';
+        };
+      } catch (err) {
+        showToast('AI Error: ' + err.message, 'error');
+      } finally {
+        btnSuggestSkills.disabled = false;
+        btnSuggestSkills.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg> Suggest Skills with AI';
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
      TOAST
      ═══════════════════════════════════════════════════════════ */
-  function showToast(message, type = 'success') {
+  function showToast(message, type) {
+    type = type || 'success';
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-
-    const icon =
-      type === 'success'
-        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
-        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-
+    const icon = type === 'success'
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
     toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
     toastContainer.appendChild(toast);
-
     setTimeout(() => {
       toast.classList.add('toast-out');
       setTimeout(() => toast.remove(), 300);
@@ -998,10 +1095,25 @@
   /* ═══════════════════════════════════════════════════════════
      INITIALIZE
      ═══════════════════════════════════════════════════════════ */
-  // Add one default experience entry to get started
-  createExperienceEntry();
-  createEducationEntry();
+  function init() {
+    // Try loading from localStorage
+    const loaded = loadFromLocalStorage();
+    if (loaded) {
+      populateFormFromState();
+      showToast('Welcome back! Your progress has been restored.', 'success');
+    } else {
+      // Add one default experience and education entry
+      createExperienceEntry();
+      createEducationEntry();
+      renderPreview();
+    }
 
-  // Initial render
-  renderPreview();
+    // Init examples gallery
+    initExamplesGallery();
+
+    // Initial progress update
+    updateProgress();
+  }
+
+  init();
 })();
