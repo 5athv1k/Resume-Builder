@@ -25,34 +25,8 @@ window.RESUME_TEMPLATES['ats'] = {
           margin: 0 auto;
           background: #fff;
         }
-        .resume-tpl-ats-banner {
-          background-color: #f0f0f0;
-          color: #333;
-          text-align: center;
-          padding: 5px;
-          font-size: 12px;
-          font-weight: bold;
-          margin-bottom: 20px;
-          border: 1px solid #ddd;
-        }
-        .resume-tpl-ats h1 {
-          font-size: 24px;
-          margin: 0 0 5px 0;
-          font-weight: bold;
-          text-transform: uppercase;
-        }
-        .resume-tpl-ats .job-title {
-          font-size: 16px;
-          font-weight: bold;
-          margin: 0 0 10px 0;
-        }
-        .resume-tpl-ats .contact-info {
-          font-size: 14px;
-          margin-bottom: 20px;
-        }
-        .resume-tpl-ats .contact-info div {
-          margin-bottom: 2px;
-        }
+        
+        .resume-tpl-ats .header { text-align: center; margin-bottom: 20px; } .resume-tpl-ats h1 { font-size: 24px; margin: 0 0 5px 0; font-weight: bold; text-transform: uppercase; } .resume-tpl-ats .job-title { font-size: 16px; font-weight: bold; margin: 0 0 10px 0; } .resume-tpl-ats .contact-info { font-size: 14px; }
         .resume-tpl-ats h2 {
           font-size: 16px;
           font-weight: bold;
@@ -87,18 +61,13 @@ window.RESUME_TEMPLATES['ats'] = {
           font-size: 14px;
         }
       </style>
-      <div class="resume-tpl-ats-banner">ATS-Optimized Format</div>
+      
       
       <div class="header">
         <h1>${esc(p.fullName)}</h1>
         ${p.jobTitle ? `<div class="job-title">${esc(p.jobTitle)}</div>` : ''}
         <div class="contact-info">
-          ${p.email ? `<div>${esc(p.email)}</div>` : ''}
-          ${p.phone ? `<div>${esc(p.phone)}</div>` : ''}
-          ${p.location ? `<div>${esc(p.location)}</div>` : ''}
-          ${p.linkedin ? `<div>${esc(p.linkedin)}</div>` : ''}
-          ${p.website ? `<div>${esc(p.website)}</div>` : ''}
-          ${p.github ? `<div>${esc(p.github)}</div>` : ''}
+          ${[p.phone, p.email, p.location, p.linkedin ? p.linkedin.replace(/^https?:\/\//, '') : '', p.github ? p.github.replace(/^https?:\/\//, '') : '', p.website ? p.website.replace(/^https?:\/\//, '') : ''].filter(Boolean).map(esc).join(' | ')}
         </div>
       </div>
     `;
@@ -210,41 +179,39 @@ window.RESUME_TEMPLATES['ats'] = {
     if (p.fullName) {
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(24);
-      const nameLines = pdf.splitTextToSize(p.fullName, contentWidth);
-      checkPage(nameLines.length * 9);
-      pdf.text(nameLines, margin, y);
-      y += nameLines.length * 9;
+      const w = pdf.getTextWidth(p.fullName);
+      pdf.text(p.fullName, margin + (contentWidth - w) / 2, y);
+      y += 9;
     }
 
     // Job Title
     if (p.jobTitle) {
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
-      const titleLines = pdf.splitTextToSize(p.jobTitle, contentWidth);
-      checkPage(titleLines.length * 6);
-      pdf.text(titleLines, margin, y);
-      y += titleLines.length * 6 + 2;
+      const w = pdf.getTextWidth(p.jobTitle);
+      pdf.text(p.jobTitle, margin + (contentWidth - w) / 2, y);
+      y += 8;
     }
     
     // Contact Info
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(11);
     const contacts = [];
-    if (p.email) contacts.push(p.email);
     if (p.phone) contacts.push(p.phone);
+    if (p.email) contacts.push(p.email);
     if (p.location) contacts.push(p.location);
-    if (p.linkedin) contacts.push(p.linkedin);
-    if (p.website) contacts.push(p.website);
-    if (p.github) contacts.push(p.github);
-    
-    contacts.forEach(c => {
-      const lines = pdf.splitTextToSize(c, contentWidth);
-      checkPage(lines.length * 5);
-      pdf.text(lines, margin, y);
-      y += lines.length * 5;
-    });
+    if (p.linkedin) contacts.push(p.linkedin.replace(/^https?:\/\//, ''));
+    if (p.website) contacts.push(p.website.replace(/^https?:\/\//, ''));
+    if (p.github) contacts.push(p.github.replace(/^https?:\/\//, ''));
     
     if (contacts.length > 0) {
+      const contactStr = contacts.join(' | ').replace(/[^\x00-\x7F]/g, '|');
+      const lines = pdf.splitTextToSize(contactStr, contentWidth);
+      lines.forEach(line => {
+        const w = pdf.getTextWidth(line);
+        pdf.text(line, margin + (contentWidth - w) / 2, y);
+        y += 5;
+      });
       y += 5;
     }
 
